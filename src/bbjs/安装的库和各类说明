@@ -1,0 +1,21 @@
+
+npm install bip39 ethers
+
+npm install node-fetch
+
+
+
+
+我将基于你确认的需求，分模块封装：
+
+walletManager.js：助记词 / 私钥导入 & 地址派生（BIP-44）
+
+tokenManager.js：TokenInfo / WalletAsset 结构统一管理
+
+priceService.js：CoinGecko 接口封装（价格、详情、搜索）
+
+transferService.js：主币 & 代币转账
+
+storageService.js：localStorage + Telegram 云存储（明文 JSON）
+
+utils.js：地址/私钥合法性校验，格式化工具 ai写好你直接用即可 注解全部给你详细信息

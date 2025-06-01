@@ -1,0 +1,134 @@
+
+
+1 使用创建，导入钱包后。需要默认添加对应的手续费资产。
+
+以下是你两个类 `AccountManager` 
+和 
+`AssetManager` 的**功能说明书**与**典型使用代码**，
+用于构建一个支持多链的钱包账户与资产管理系统。
+
+---
+
+## 🧠 功能说明书
+
+### ✅ `AccountManager`：钱包账户管理器
+
+用于**创建、导入、切换和删除钱包账户**，支持助记词和私钥导入，并支持根据链 ID 自动派生地址。
+
+#### 核心功能：
+
+| 方法                             | 说明                           |
+| ------------------------------ | ---------------------------- |
+| `createFromMnemonic()`         | 随机生成助记词并创建钱包                 |
+| `importMnemonic(mnemonic)`     | 使用助记词导入钱包                    |
+| `importPrivateKey(privateKey)` | 使用私钥导入钱包                     |
+| `switchAccount(walletId)`      | 切换当前账户                       |
+| `switchToChain(chainId)`       | 切换当前账户使用的链，如果无地址则自动派生（助记词账户） |
+| `getCurrentAccount()`          | 获取当前账户信息                     |
+| `getCurrentAddress()`          | 获取当前链上的地址                    |
+| `getAllAccounts()`             | 获取所有账户信息                     |
+| `deleteAccount(walletId)`      | 删除某个账户（至少保留一个）               |
+
+---
+
+### ✅ `AssetManager`：资产管理器
+
+用于**管理每个账户地址的链上资产信息**，包括默认主币、代币添加与价格更新。
+
+#### 核心功能：
+
+| 方法                                                                   | 说明                              |
+| -------------------------------------------------------------------- | ------------------------------- |
+| `getAssets(walletId, chainId)`                                       | 获取指定钱包和链的所有资产                   |
+| `saveAssets(walletId, chainId, assets)`                              | 保存资产列表                          |
+| `addAsset(walletId, chainId, asset)`                                 | 添加一项资产（避免重复）                    |
+| `removeAsset(walletId, chainId, contractAddress)`                    | 删除指定合约地址的资产                     |
+| `refreshAssets(walletId, chainId, address)`                          | 更新资产价格、图标信息                     |
+| `addDefaultMainAsset(walletId, chainId, address)`                    | 根据 `chainId` 添加默认主币资产    创建账号或导入需要调用       |
+| `addContractTokenAsset(walletId, chainId, address, contractAddress)` | 添加指定合约地址代币资产（使用 CoinGecko 获取信息） |
+| `addContractTokenAsset(walletId, chainId, address, contractAddress)  | 添加一个合约代币资产  创建账号或导入需要调用
+
+
+---
+
+## 🛠 使用示例
+
+### 💡 创建新钱包账户（助记词）
+
+```js
+const account = accountManager.createFromMnemonic()
+console.log('新助记词:', account.mnemonic)
+```
+
+---
+
+### 💡 导入私钥创建账户
+
+```js
+const account = accountManager.importPrivateKey('0xabc123...')
+console.log('私钥导入地址:', account.addresses[0].address)
+```
+
+---
+
+### 💡 获取当前账户地址
+
+```js
+const current = accountManager.getCurrentAddress()
+console.log('当前地址:', current.address)
+```
+
+---
+
+### 💡 切换账户 + 切换链
+
+```js
+accountManager.switchAccount('wallet-id-123')
+const address = accountManager.switchToChain('137') // Polygon
+console.log('Polygon地址:', address)
+```
+
+---
+
+### 💡 添加主币资产（自动识别链参数）
+
+```js
+const acc = accountManager.getCurrentAccount()
+const addr = accountManager.getCurrentAddress()
+await assetManager.addDefaultMainAsset(acc.walletId, addr.chainId, addr.address)
+```
+
+---
+
+### 💡 添加合约代币资产（会查询 CoinGecko）
+
+```js
+await assetManager.addContractTokenAsset(
+  acc.walletId,
+  addr.chainId,
+  addr.address,
+  '0x...tokenAddress'
+)
+```
+
+---
+
+### 💡 获取和刷新当前资产
+
+```js
+const assets = assetManager.getAssets(acc.walletId, addr.chainId)
+console.log('当前资产列表:', assets)
+
+await assetManager.refreshAssets(acc.walletId, addr.chainId, addr.address)
+```
+
+---
+
+## 🧩 注意事项
+
+* 所有数据都默认保存在浏览器 `localStorage`，可替换为 Telegram、IndexedDB、后端 API。
+* 目前默认所有链都用 `m/44'/60'/0'/0/0` 派生路径，如果后续支持其他链（如 BTC、TRON）需扩展逻辑。
+* 合约代币价格来自 CoinGecko，不支持的链需手动设置 fallback 值。
+* 所有资产都包含字段：`walletId`、`chainId`、`address`、`symbol`、`decimals`、`balance`、`priceUsd`、`iconUrl` 等。
+
+
